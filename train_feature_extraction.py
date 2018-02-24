@@ -67,7 +67,9 @@ training_operation = optimizer.minimize(loss_operation)
 correct_prediction = tf.equal(tf.argmax(logits, 1), tf.argmax(Y, 1))
 accuracy_operation = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 
+EPOCH_COUNT = 10
 BATCH_SIZE = 128
+
 def evaluate(sess, X_data, y_data):
     num_examples = len(X_data)
     total_accuracy = 0
@@ -79,31 +81,21 @@ def evaluate(sess, X_data, y_data):
 
 # Run Inference
 import time
-t = time.time()
-# Read Images
-im1 = imread("construction.jpg").astype(np.float32)
-im1 = im1 - np.mean(im1)
 
-im2 = imread("stop.jpg").astype(np.float32)
-im2 = im2 - np.mean(im2)
-
-input = [im1, im2]
-
-accuracy = 0
 init = tf.global_variables_initializer()
 sess = tf.Session()
 sess.run(init)
-output = sess.run(prediction, feed_dict={x: input})
-# accuracy = evaluate(sess, X_validate, y_validate)
+
+for epoch in range(EPOCH_COUNT):
+    t = time.time()
+
+    num_examples = len(X_train)
+    for offset in range(0, num_examples, BATCH_SIZE):
+        batch_x, batch_y = X_train[offset:offset+BATCH_SIZE], y_train[offset:offset+BATCH_SIZE]
+        error = sess.run(training_operation, feed_dict={x: batch_x, Y: batch_y})
+
+    accuracy = evaluate(sess, X_validate, y_validate)
+    print("Epoch: %d, Time: %.3f seconds, accuracy: %.3f" % (epoch + 1, time.time() - t, accuracy))
+
 sess.close()
 
-# Print Output
-for input_im_ind in range(output.shape[0]):
-    inds = np.argsort(output)[input_im_ind, :]
-    print("Image", input_im_ind)
-    for i in range(5):
-        print("%s: %.3f" % (class_names[inds[-1 - i]], output[input_im_ind, inds[-1 - i]]))
-    print()
-
-
-print("Time: %.3f seconds, accuracy: %.3f" % (time.time() - t, accuracy))
